@@ -12,6 +12,8 @@ fwd = headmodel.fwd;
 savefile_path = '../source/';
 
 % -------------------------------------------------------------------------
+%------------------python里只生成了0-2------------------------------------%
+%iter_list = 1:5;   
 iter_list = 0:2;   % the iter during NMM generation.
 previous_iter_spike_num = zeros(1, 994);
 for i_iter = 1:length(iter_list)
@@ -32,6 +34,9 @@ for i_iter = 1:length(iter_list)
     end
 
     % -------- start the main progress -----------------------------------%
+    %----------不能理解remaining_regions的作用，无法修改-------------------%
+    %----------不能理解183:183,明显有错------------------------------------%
+    % for ii = 183:183%length(remaining_regions)
     for ii = 1:10%length(remaining_regions)
 
         i = remaining_regions(ii);
