@@ -37,9 +37,9 @@ def main(region_id):
             sigma[4] = phi_n_scaling
 
             # set the random seed for the random intergrator
-            # randomStream = np.random.mtrand.RandomState(0)
-            # noise_class = noise.Additive(random_stream=randomStream, nsig=sigma)
-            # integ = integrators.HeunStochastic(dt=2 ** -1, noise=noise_class)
+            randomStream = np.random.mtrand.RandomState(0)
+            noise_class = noise.Additive(random_stream=randomStream, nsig=sigma)
+            integ = integrators.HeunStochastic(dt=2 ** -1, noise=noise_class)
 
             sim = simulator.Simulator(
                 model=jrm,
@@ -56,41 +56,41 @@ def main(region_id):
             data = (data[:, 1, :, :] - data[:, 2, :, :]).squeeze().astype(np.float32)
 
             # Save the entire 200s simulation as a single MAT file
-            # savemat('../source/raw_nmm/a{}/mean_iter_{}_a_iter_{}.mat'.format(region_id, iter_m, region_id),
-            #         {'time': t, 'data': data, 'A': use_A})
+            savemat('./source/raw_nmm_200s/a{}/mean_iter_{}_a_iter_{}_ds.mat'.format(region_id, iter_m, region_id),
+                    {'time': t, 'data': data, 'A': use_A})
 
             ### 用于合并保存的路径保存
-            file_paths = []
-
-            # run 200s of simulation, cut it into 20 pieces, 10s each. (Avoid saving large files)
-            for iii in range(20):
-                siml = 1e4
-                out = sim.run(simulation_length=siml)
-                (t, data), = out
-                data = (data[:, 1, :, :] - data[:, 2, :, :]).squeeze().astype(np.float32)
-
-                # # in the fsaverage5 mapping, there is no vertices corresponding to region 7,325,921, 949, so change label 994-998 to those id
-                # data[:, 7] = data[:, 994]
-                # data[:, 325] = data[:, 997]
-                # data[:, 921] = data[:, 996]
-                # data[:, 949] = data[:, 995]
-                # data = data[:, :994]
-                piece_file_path = './source/raw_nmm/a{}/mean_iter_{}_a_iter_{}_{}.mat'.format(region_id, iter_m, region_id, iii)
-                savemat(piece_file_path,{'time': t, 'data': data, 'A': use_A})
-                # 保存路径
-                file_paths.append(piece_file_path)
-
-            combined_data = []
-            for piece_file_path in file_paths:
-                piece_data = loadmat(piece_file_path)['data']
-                combined_data.append(piece_data)
-
-            # Combine the data from all pieces
-            combined_data = np.concatenate(combined_data, axis=0)
-
-            # Save the combined data as a single MAT file
-            final_file_path = './source/raw_nmm_combine/a{}/mean_iter_{}_a_iter_{}.mat'.format(region_id, iter_m, region_id)
-            savemat(final_file_path, {'time': t, 'data': combined_data, 'A': use_A})
+            # file_paths = []
+            #
+            # # run 200s of simulation, cut it into 20 pieces, 10s each. (Avoid saving large files)
+            # for iii in range(20):
+            #     siml = 1e4
+            #     out = sim.run(simulation_length=siml)
+            #     (t, data), = out
+            #     data = (data[:, 1, :, :] - data[:, 2, :, :]).squeeze().astype(np.float32)
+            #
+            #     # # in the fsaverage5 mapping, there is no vertices corresponding to region 7,325,921, 949, so change label 994-998 to those id
+            #     # data[:, 7] = data[:, 994]
+            #     # data[:, 325] = data[:, 997]
+            #     # data[:, 921] = data[:, 996]
+            #     # data[:, 949] = data[:, 995]
+            #     # data = data[:, :994]
+            #     piece_file_path = './source/raw_nmm/a{}/mean_iter_{}_a_iter_{}_{}.mat'.format(region_id, iter_m, region_id, iii)
+            #     savemat(piece_file_path,{'time': t, 'data': data, 'A': use_A})
+            #     # 保存路径
+            #     file_paths.append(piece_file_path)
+            #
+            # combined_data = []
+            # for piece_file_path in file_paths:
+            #     piece_data = loadmat(piece_file_path)['data']
+            #     combined_data.append(piece_data)
+            #
+            # # Combine the data from all pieces
+            # combined_data = np.concatenate(combined_data, axis=0)
+            #
+            # # Save the combined data as a single MAT file
+            # final_file_path = './source/raw_nmm_combine/a{}/mean_iter_{}_a_iter_{}.mat'.format(region_id, iter_m, region_id)
+            # savemat(final_file_path, {'time': t, 'data': combined_data, 'A': use_A})
 
 
     print('Time for', region_id, time.time() - start_time)

@@ -44,19 +44,23 @@ for i_iter = 1:length(iter_list)
         if isempty(dir([savefile_path 'nmm_' filename '/a' int2str(i-1)]))
             mkdir([savefile_path 'nmm_' filename '/a' int2str(i-1)])
         end
-
-        fn = [savefile_path 'raw_nmm/a' int2str(i-1) '/mean_iter_' int2str(iter) '_a_iter_' int2str(i-1)];
+        
+        fn = [savefile_path 'raw_nmm_200s/a' int2str(i-1) '/mean_iter_' int2str(iter) '_a_iter_' int2str(i-1)];
+        %fn = [savefile_path 'raw_nmm/a' int2str(i-1) '/mean_iter_' int2str(iter) '_a_iter_' int2str(i-1)];
         raw_data = load([fn '_ds.mat']);
         nmm = raw_data.data;
         % nmm = downsample(nmm, 4);
         [spike_time, spike_chan] = find_spike_time(nmm);                   % Process raw tvb output to find the spike peak time
         
         % ----------- select the spikes we want to extract ---------------%
+        %----------这句更是重量级，纯纯乱写--------------------------------%
         rule1 =  (spike_chan == i);                                        % there is spike in the source region
         start_time = floor(spike_time(rule1)/500) * 500 + 1;               % there is no source in other region in the clip
-        clear_ind = repmat(start_time, [900, 1]) + (-200:699)';            % 900 * num_spike
+        rep = repmat(start_time', [900, 1]);
+        clear_ind = rep + (-200:699)';                                     % 900 * num_spike
         rule2 = (sum(ismember(clear_ind, spike_time(~rule1)), 1) == 0);    % there are no other spikes in the clip
         spike_time = spike_time(rule1);
+        %-----------------这句更是重量级-----------------------------------%
         spike_time = spike_time(rule2);
                
         % ----------- Optional :  Scale the NMM here----------------------%
@@ -115,14 +119,30 @@ function [spike_time, spike_chan] = find_spike_time(nmm)
     spikes_nmm(nmm < 8) = 0;                                               % find the spiking activity stronger than the background
     local_max = islocalmax(spikes_nmm);                                    % find the peak
     [spike_time, spike_chan] = find(local_max);
-    [spike_time, sort_ind] = sort(spike_time);
-    spike_chan = spike_chan(sort_ind);                                     % sort the activity based on time
-    use_ind = (spike_time-249 > 0) & ...                                   % ignore the spikes at the beginning or end of the signal
-        (spike_time+250 < size(nmm, 1) & ...
-        [1 diff(spike_time)'>100]');                                       % ignore peaks close together for now (will have signals with close peaks in multi-source condition)
-    spike_time = spike_time(use_ind)';
-    spike_chan = spike_chan(use_ind)';
 
+    % 先排除峰值
+    use_ind = (spike_time-249 > 0) & (spike_time+250 < size(nmm, 1)) & ([1 diff(spike_time)'>100]');
+    spike_time = spike_time(use_ind);
+    spike_chan = spike_chan(use_ind);
+
+    % 然后再进行排序
+    [spike_time, sort_ind] = sort(spike_time);
+    spike_chan = spike_chan(sort_ind);
+
+
+    %先排序再排除峰值明显有错%
+    %[spike_time, sort_ind] = sort(spike_time);
+    %spike_chan = spike_chan(sort_ind);                                     % sort the activity based on time
+    %spike_time-249>0:排除前250s的峰值
+    %spike_time+250<size(nmm,1):排除后250s的峰值
+    %[1 diff(spike_time)'>100']:排除靠的太近的峰值
+    % ignore the spikes at the beginning or end of the signal 
+    % ignore peaks close together for now (will have signals with close peaks in multi-source condition)
+    % 找到错误：全部变成0了
+    %use_ind = (spike_time-249 > 0) & (spike_time+250 < size(nmm, 1)) & ([1 diff(spike_time)'>100]');                                   
+    %spike_time = spike_time(use_ind)';
+    %spike_chan = spike_chan(use_ind)';
+    
 end
 
 
