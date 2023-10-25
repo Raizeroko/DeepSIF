@@ -21,6 +21,7 @@ def main(region_id):
     # define A value
     num_region = conn.number_of_regions
     a_range = [3.5]
+    # 兴奋性突触增益（A）值:默认3.25，可选3.5、3.55、3.6）
     A = np.ones((num_region, len(a_range))) * 3.25                                  # the normal A value is 3.25
     A[region_id, :] = a_range
 

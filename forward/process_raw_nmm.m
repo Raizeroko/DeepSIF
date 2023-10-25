@@ -2,8 +2,13 @@ function process_raw_nmm(filename, varargin)
 % Scan through the raw NMM data to find the spike data
 
 % %%%%%%%%%%%%%% SETUP PARAMETERS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% p是一个参数解析器对象，由于matlab中不像c++那样在函数传参要指明参数类型，
+% 所以就用一个参数解析器判断对应名称的参数是不是想要的类型
 p = inputParser;
+%判断名称叫'filename'的参数，即函数传的第一个参数是否是个字符串类型
 addRequired(p,'filename',@ischar);
+% 在参数解析器中添加一个名为 'leadfield_name' 的参数，设置其默认值为 'leadfield_75_20k.mat'
+% leadfield_75_20k.mat:leadfield matrix for fsaverage5, 75 channels
 addParameter(p,'leadfield_name','leadfield_75_20k.mat', @ischar);
 parse(p, filename, varargin{:})
 filename = p.Results.filename;
@@ -25,18 +30,20 @@ for i_iter = 1:length(iter_list)
     % ------- Resume running if the process was interupted ----------------
     done = dir([savefile_path 'nmm_' filename '/clip_info/iter' int2str(iter) '/iter_' int2str(iter) '_i_*']);
     finished_regions = zeros(1, length(done));
+    %-----------这个循环什么作用--------------
     for i = 1:length(done)
         finished_regions(i) = str2num(done(i).name(10:end-3));
     end
+    %994个区域还有哪些区域没处理
     remaining_regions = setdiff(1:994, finished_regions+1);
     if isempty(remaining_regions)
         continue;
     end
 
     % -------- start the main progress -----------------------------------%
-    %----------不能理解remaining_regions的作用，无法修改-------------------%
+    %----------不能理解remaining_regions的作用，无法修改--------------------%
     %----------不能理解183:183,明显有错------------------------------------%
-    % for ii = 183:183%length(remaining_regions)
+    % for ii = 183:183%length(remaining_regions)    
     for ii = 1:10%length(remaining_regions)
 
         i = remaining_regions(ii);
@@ -53,7 +60,7 @@ for i_iter = 1:length(iter_list)
         [spike_time, spike_chan] = find_spike_time(nmm);                   % Process raw tvb output to find the spike peak time
         
         % ----------- select the spikes we want to extract ---------------%
-        %----------这句更是重量级，纯纯乱写--------------------------------%
+        %----------这句更是重量级，纯纯乱写---------------------------------%
         rule1 =  (spike_chan == i);                                        % there is spike in the source region
         start_time = floor(spike_time(rule1)/500) * 500 + 1;               % there is no source in other region in the clip
         rep = repmat(start_time', [900, 1]);
