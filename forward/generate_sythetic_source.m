@@ -1,8 +1,11 @@
 clear
 train = 0;
 n_sources = 2;
+%fs_cortex_20k_inflated.mat: inflated fsaverage5 cortex
 load('../anatomy/fs_cortex_20k_inflated.mat')
+%fs_cortex_20k.mat: fsaverage5 cortex
 load('../anatomy/fs_cortex_20k.mat')
+%fs_cortex_20k_region_mapping.mat : map fsaverage5 to 994 regions
 load('../anatomy/fs_cortex_20k_region_mapping.mat');
 % when load mat in python, python cannot read nan properly, so use a magic number to represent nan when saving
 NAN_NUMBER = 15213; 
@@ -29,6 +32,7 @@ for i=1:994
     all_nb = cell(1,4);
     all_nb{1} = find_nb_rg(nbs, region_id, region_id);                     % first layer regions
     all_nb{2} = find_nb_rg(nbs, all_nb{1}, [region_id, all_nb{1}]);        % second layer regions
+    %centre(region_id, :):取centre的第region_id行
     v0 = get_direction(centre(region_id, :),centre(all_nb{1}, :));         % direction between the center region and first layer neighbors
     angs = zeros(size(v0,1),1);
     for k=1:size(v0,1)                                                     
@@ -132,10 +136,12 @@ load('../anatomy/leadfield_75_20k.mat');
 gt = load([ds_type '_sample_' dataset_name '.mat']);
 scale_ratio = [];
 n_source = size(gt.selected_region, 2);
-parfor i=1:size(gt.selected_region, 1)
+%parfor i=1:size(gt.selected_region, 1)
+for i=1:size(gt.selected_region, 1)
     for k=1:n_source
         a = gt.selected_region(i,k,:);
         a = a(:);
+        %-------------------删除a中大于1000的，为什么？---------------------%
         a(a>1000) = [];
         if train
             scale_ratio(i,k,:) = find_alpha(a+1, random_samples(i, k), fwd, 10:2:20);
@@ -207,15 +213,25 @@ function [Ps, Pn, cur_snr] = calcualate_SNR(nmm, fwd, region_id, spike_ind)
     cur_snr = 10*log10(Ps/Pn);
 end
 
-
+%----------------已修改，基本确定正确--------------------------------------%
 function v = get_direction(a,b)
 % Calculate direction between two point
 % INPUTS:
 %     - a,b        : points in 3D; size 1*3
 % OUTPUTS:
 %     - v          : direction between two points; size 1*3
+%v[5,3]：中心区域与临近区域的方向向量,
 v = b-a;
-v = v./mynorm(v,2);
+%将v的每一行变成单位向量
+%v = v./mynorm(v,2);
+n = size(v, 1);  % 获取向量的数量
+norms = zeros(n, 1);  % 为每个向量的2-范数创建一个数组
+
+for i = 1:n
+    norms(i) = norm(v(i, :), 2);  % 计算每个向量的2-范数
+end
+
+v = v./norms;
 end
 
 
